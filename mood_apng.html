@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CUT-IN BUILDER</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Gaegu:wght@400;700&family=Black+Han+Sans&family=Gowun+Batang:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1:#12071c; --bg2:#1a0f2e; --bg3:#210b1e;
+    --glass:rgba(255,255,255,0.055); --glass-strong:rgba(255,255,255,0.09);
+    --border:rgba(255,255,255,0.12); --border2:rgba(255,255,255,0.24);
+    --ink:#f3ecf2; --muted:#b7a6bd; --faint:#7c6c86;
+    --a1:#ff5d8f; --a2:#8b5cf6; --a3:#ffb15c;
+    --grad:linear-gradient(135deg,var(--a1),var(--a2));
+    --grad-soft:linear-gradient(135deg,rgba(255,93,143,.30),rgba(139,92,246,.30));
+    --amber:var(--a3); --amber-dim:#a8783a; --cool:#8b5cf6;
+    --ok:#5ed99a; --bad:#ff6b81;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    --display:"Space Grotesk",var(--sans);
+    --mono:"IBM Plex Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;font-size:15px;line-height:1.5}
+  body{
+    background:
+      radial-gradient(1100px 700px at 12% -8%, #3a1240 0%, transparent 60%),
+      radial-gradient(900px 650px at 105% 8%, #17284d 0%, transparent 55%),
+      linear-gradient(160deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    background-attachment:fixed;min-height:100vh}
+  a{color:inherit}
+  .wrap{max-width:1160px;margin:0 auto;padding:30px 20px 60px}
+
+  header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding-bottom:22px;margin-bottom:26px;border-bottom:1px solid var(--border)}
+  .logo-mark{width:38px;height:38px;flex:none;border-radius:11px;background:var(--grad);
+    position:relative;box-shadow:0 6px 18px rgba(139,92,246,.45);transform:rotate(-6deg)}
+  .logo-mark::after{content:"";position:absolute;inset:5px;border-radius:7px;
+    background:rgba(255,255,255,0.22);mix-blend-mode:overlay}
+  .brand-titles{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .brand{font-family:var(--display);font-size:25px;font-weight:700;letter-spacing:.02em;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+    line-height:1.1}
+  .brand .dot{color:var(--a3);-webkit-text-fill-color:var(--a3)}
+  .tagline{color:var(--muted);font-size:13px;letter-spacing:.15px}
+
+  .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:22px;align-items:start}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+
+  /* Stage / projection */
+  .stage{background-color:#151515;
+    background-image:linear-gradient(45deg,#0a0a0a 25%,transparent 25%),linear-gradient(-45deg,#0a0a0a 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#0a0a0a 75%),linear-gradient(-45deg,transparent 75%,#0a0a0a 75%);
+    background-size:16px 16px; background-position:0 0,0 8px,8px -8px,-8px 0px;
+    border:1px solid var(--border);border-radius:18px;
+    position:relative;overflow:hidden;aspect-ratio:16/9;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 24px 60px -30px #000, 0 0 0 1px rgba(255,255,255,.03) inset}
+  .stage canvas{max-width:100%;max-height:100%;display:block;image-rendering:auto}
+  .stage .idle{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:10px;color:var(--faint);font-family:var(--serif);
+    font-size:19px;letter-spacing:1px;text-align:center;padding:20px}
+  .stage .idle small{font-family:var(--sans);font-size:12.5px;letter-spacing:.3px}
+
+  .transport{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+  .cutnav{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;font-family:var(--mono)}
+  .chip{background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--border);color:var(--ink);
+    border-radius:999px;padding:7px 14px;font-size:12.5px;cursor:pointer;transition:border-color .15s,transform .15s}
+  .chip:hover{border-color:var(--border2);transform:translateY(-1px)}
+  .scrub{flex:1;min-width:120px;accent-color:var(--a1)}
+
+  /* Panels */
+  .panel{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--border);
+    border-radius:18px;padding:18px;box-shadow:0 12px 32px -18px rgba(0,0,0,.5)}
+  .panel + .panel{margin-top:16px}
+  .panel h2{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);
+    margin:0 0 14px;font-weight:600}
+
+  label.field{display:block;margin-bottom:14px}
+  label.field > span{display:block;font-size:12.5px;color:var(--muted);margin-bottom:6px;letter-spacing:.2px}
+  input[type=range]{accent-color:var(--a1)}
+  textarea,select,input[type=text]{width:100%;background:rgba(0,0,0,0.22);color:var(--ink);
+    border:1px solid var(--border);border-radius:11px;padding:11px 12px;font-family:inherit;font-size:14px}
+  textarea{min-height:180px;resize:vertical;line-height:1.55;font-size:14.5px}
+  textarea:focus,select:focus,input:focus{outline:none;border-color:var(--a2);
+    box-shadow:0 0 0 3px rgba(139,92,246,.18)}
+  select{appearance:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+    background-position:calc(100% - 16px) 55%,calc(100% - 11px) 55%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:34px}
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+
+
+  .swatches{display:flex;gap:9px;flex-wrap:wrap}
+  .sw{width:34px;height:34px;border-radius:10px;cursor:pointer;border:2px solid transparent;position:relative;
+    transition:transform .15s}
+  .sw:hover{transform:translateY(-1px) scale(1.05)}
+  .sw[aria-pressed=true]{border-color:rgba(255,255,255,.85);box-shadow:0 0 0 2px var(--bg2),0 0 0 4px var(--a1)}
+  .customColors{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:12px}
+  .customColors label{display:block}
+  .customColors span{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input[type=color]{width:100%;height:32px;padding:2px;border-radius:9px;border:1px solid var(--border);
+    background:rgba(0,0,0,0.22);cursor:pointer}
+
+  .moods{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;max-height:290px;overflow-y:auto;padding-right:4px}
+  .moods::-webkit-scrollbar{width:6px}
+  .moods::-webkit-scrollbar-track{background:rgba(255,255,255,.04);border-radius:999px}
+  .moods::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:999px}
+  .mood{background:rgba(0,0,0,0.18);border:1px solid var(--border);border-radius:11px;
+    padding:10px 8px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s,transform .15s}
+  .mood:hover{transform:translateY(-1px);border-color:var(--border2)}
+  .mood[aria-pressed=true]{border-color:transparent;background:var(--grad-soft);
+    box-shadow:0 0 0 1px rgba(255,93,143,.4)}
+  .mood b{display:block;font-size:12.5px;font-weight:600;letter-spacing:.1px;color:#ffffff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .toggle{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+  .toggle input{appearance:none;width:38px;height:22px;border-radius:999px;background:rgba(255,255,255,.12);
+    position:relative;cursor:pointer;transition:background .15s;border:1px solid var(--border)}
+  .toggle input:checked{background:var(--grad);border-color:transparent}
+  .toggle input::after{content:"";position:absolute;top:1px;left:1px;width:18px;height:18px;border-radius:50%;
+    background:#fff;transition:transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .toggle input:checked::after{transform:translateX(16px)}
+  .toggle span{font-size:12.5px}
+  .hint{color:var(--faint);font-size:11.5px;margin-top:-6px;margin-bottom:12px;line-height:1.45}
+
+  .render-btn{width:100%;background:var(--grad);color:#fff;border:none;border-radius:999px;
+    padding:15px;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;font-family:inherit;
+    box-shadow:0 8px 26px -6px rgba(255,93,143,.55);transition:transform .15s,box-shadow .15s}
+  .render-btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px -4px rgba(139,92,246,.6)}
+  .render-btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none}
+
+  .progress{height:6px;background:rgba(255,255,255,.1);border-radius:999px;overflow:hidden;margin-top:12px;display:none}
+  .progress.on{display:block}
+  .progress i{display:block;height:100%;width:0;background:var(--grad);transition:width .12s}
+  .status{color:var(--muted);font-size:12.5px;margin-top:8px;min-height:16px}
+
+  /* Output list */
+  .outs{margin-top:26px}
+  .outs h2{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:1.6px;color:var(--muted);margin:0 0 12px;font-weight:600}
+  .cutcard{display:flex;gap:14px;align-items:center;background:var(--glass);backdrop-filter:blur(14px);
+    border:1px solid var(--border);border-radius:15px;padding:12px;margin-bottom:10px}
+  .cutcard .thumb{width:96px;height:54px;border-radius:9px;flex:none;object-fit:cover;border:1px solid var(--border);
+    background-color:#151515;
+    background-image:linear-gradient(45deg,#0a0a0a 25%,transparent 25%),linear-gradient(-45deg,#0a0a0a 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#0a0a0a 75%),linear-gradient(-45deg,transparent 75%,#0a0a0a 75%);
+    background-size:12px 12px; background-position:0 0,0 6px,6px -6px,-6px 0px}
+  .cutcard .meta{flex:1;min-width:0}
+  .cutcard .meta .t{font-family:var(--serif);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+  .cutcard .meta .d{font-size:12px;color:var(--muted);margin-top:4px;display:flex;gap:12px;flex-wrap:wrap;font-family:var(--mono)}
+  .size{font-variant-numeric:tabular-nums}
+  .size.ok{color:var(--ok)} .size.bad{color:var(--bad)}
+  .dl{background:var(--glass);border:1px solid var(--border);color:var(--ink);border-radius:999px;
+    padding:9px 16px;font-size:13px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:border-color .15s}
+  .dl:hover{border-color:var(--border2)}
+  .dl:disabled{opacity:.4;cursor:default}
+  .dlall{background:transparent;border:1px solid var(--border2);color:var(--ink);
+    border-radius:999px;padding:10px 18px;font-size:13.5px;cursor:pointer;font-family:inherit;
+    background-image:var(--grad-soft)}
+  .empty{color:var(--faint);font-size:13.5px;padding:8px 2px}
+  footer{margin-top:44px;color:var(--faint);font-size:12px;border-top:1px solid var(--border);padding-top:16px;line-height:1.6}
+  code{background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:12px;font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo-mark"></div>
+    <div class="brand-titles">
+      <div class="brand">CUT-IN BUILDER<span class="dot">.</span></div>
+      <div class="tagline">텍스트를 넣으면 분위기 있게 연출해 APNG로 뽑아줍니다 — 컷마다 5&nbsp;MB 이하 보장</div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: stage + text -->
+    <div>
+      <div class="stage" id="stage">
+        <div class="idle" id="idle">
+          여기에 미리보기가 재생됩니다
+          <small>오른쪽에서 분위기를 고르고, 아래에 문장을 입력합니다</small>
+        </div>
+        <canvas id="preview" width="640" height="360" style="display:none"></canvas>
+      </div>
+      <div class="transport">
+        <button class="chip" id="playBtn">❚❚ 일시정지</button>
+        <div class="cutnav">
+          <button class="chip" id="prevCut">‹</button>
+          <span id="cutLabel">컷 –</span>
+          <button class="chip" id="nextCut">›</button>
+        </div>
+        <input class="scrub" id="scrub" type="range" min="0" max="1000" value="0">
+      </div>
+
+      <div class="panel" style="margin-top:16px">
+        <h2>문장</h2>
+        <label class="field" style="margin-bottom:6px">
+          <span>빈 줄 또는 <code>……</code> 로 컷을 나눕니다. 컷 하나 = APNG 하나</span>
+          <textarea id="text" spellcheck="false">그날의 공기는
+아직 식지 않았다
+
+……
+
+너는 아무 말도 하지 않았고
+나는 그게 대답이라 생각했다
+
+……
+
+먼 곳에서 불빛 하나가
+천천히 꺼졌다</textarea>
+        </label>
+        <button class="render-btn" id="render">APNG 만들기</button>
+        <div class="progress" id="prog"><i id="progBar"></i></div>
+        <div class="status" id="status"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: controls -->
+    <div>
+      <div class="panel">
+        <h2>분위기</h2>
+        <div class="moods" id="moods"></div>
+      </div>
+
+      <div class="panel">
+        <h2>색 · 글꼴</h2>
+        <label class="field">
+          <span>색감 <span style="color:var(--faint);font-weight:400">· 프리셋을 고른 뒤 아래에서 자유롭게 조정할 수 있습니다</span></span>
+          <div class="swatches" id="themes"></div>
+        </label>
+        <div class="customColors" id="customColors">
+          <label><span>배경 위</span><input type="color" id="cBgTop" value="#141824"></label>
+          <label><span>배경 아래</span><input type="color" id="cBgBot" value="#05070d"></label>
+          <label><span>글자색</span><input type="color" id="cText" value="#ece7d9"></label>
+          <label><span>포인트</span><input type="color" id="cAccent" value="#c9a876"></label>
+        </div>
+        <div class="row">
+          <label class="field">
+            <span>글꼴</span>
+            <select id="font">
+              <option value="serif">명조</option>
+              <option value="sans">고딕</option>
+              <option value="mono">고정폭</option>
+              <option value="hand">손글씨</option>
+              <option value="impact">임팩트</option>
+              <option value="elegant">우아한 세리프</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>정렬</span>
+            <select id="align">
+              <option value="center">가운데</option>
+              <option value="left">왼쪽</option>
+            </select>
+          </label>
+        </div>
+        <label class="field" style="margin-bottom:4px">
+          <span>글자 크기 · <b id="scaleLabel">100%</b></span>
+          <input id="textScale" type="range" min="50" max="180" step="5" value="100" style="width:100%">
+        </label>
+        <div class="hint">글자 크기만 바뀌고 배경·빛 효과의 크기는 그대로 유지됩니다. 긴 문장은 화면에 맞춰 자동으로 더 줄어들 수 있습니다.</div>
+      </div>
+
+      <div class="panel">
+        <h2>배경 이미지 <span style="color:var(--faint);text-transform:none;letter-spacing:0">· 선택</span></h2>
+        <label class="toggle" style="margin-bottom:10px">
+          <input type="checkbox" id="transparent">
+          <span>배경 투명화</span>
+        </label>
+        <div class="hint" id="transHint" style="margin-top:-4px">켜면 색감·사진 배경 없이 문구와 효과만 투명 배경에 그려집니다.</div>
+        <div class="hint" style="margin-top:0">사진을 올리면 그 위에 문구와 효과가 얹힙니다. 모든 컷에 공통으로 적용됩니다.</div>
+        <div id="bgRow" style="display:flex;align-items:center;gap:10px">
+          <label class="chip" style="cursor:pointer" for="bgFile">사진 선택</label>
+          <input type="file" id="bgFile" accept="image/*" style="display:none">
+          <img id="bgThumb" style="display:none;width:44px;height:44px;object-fit:cover;border-radius:7px;border:1px solid var(--border)">
+          <button class="chip" id="bgClear" style="display:none">제거</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>크기 · 길이</h2>
+        <div class="row">
+          <label class="field">
+            <span>해상도</span>
+            <select id="res">
+              <option value="640x360">640×360</option>
+              <option value="854x480">854×480</option>
+              <option value="720x720">720×720</option>
+              <option value="608x1080">608×1080</option>
+              <option value="1080x608">1080×608</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>프레임</span>
+            <select id="fps">
+              <option value="8">8 fps</option>
+              <option value="12" selected>12 fps</option>
+              <option value="15">15 fps</option>
+              <option value="24">24 fps</option>
+            </select>
+          </label>
+        </div>
+        <label class="field">
+          <span>길이 · <b id="durLabel">3.0초</b></span>
+          <input id="dur" type="range" min="1.5" max="7" step="0.5" value="3" style="width:100%">
+        </label>
+        <label class="toggle" style="margin-bottom:6px">
+          <input type="checkbox" id="autofit" checked>
+          <span>5&nbsp;MB 초과 시 자동 축소</span>
+        </label>
+        <div class="hint">켜 두면 컷이 5&nbsp;MB를 넘을 때 해상도·프레임 수를 자동으로 낮춰 한도 안에 넣습니다.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTPUT -->
+  <div class="outs">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <h2 style="margin:0">완성된 컷</h2>
+      <button class="dlall" id="dlall" style="display:none">전부 ZIP으로 받기</button>
+    </div>
+    <div id="outlist"><div class="empty">아직 없습니다. 위에서 <b>APNG 만들기</b>를 누르면 됩니다.</div></div>
+  </div>
+
+  <footer>
+    APNG는 투명 배경·부드러운 그라데이션을 지원하는 애니메이션 PNG입니다. 트위터/디스코드/카톡·웹 어디서나 정지 이미지처럼 재생됩니다.
+    · 파일이 너무 크면 길이·fps·해상도를 줄이거나, 필름 그레인이 있는 분위기 대신 다른 분위기를 선택합니다.
+  </footer>
+</div>
+
+<canvas id="work" style="display:none"></canvas>
+<script>
+"use strict";
+
+/* ---------- APNG encoder (검증된 코어) ---------- */
+const APNG = (() => {
+  let table;
+  function crc32(bytes){
+    if(!table){ table=new Uint32Array(256);
+      for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);table[n]=c>>>0;}}
+    let crc=0xFFFFFFFF;
+    for(let i=0;i<bytes.length;i++) crc=(crc>>>8)^table[(crc^bytes[i])&0xFF];
+    return (crc^0xFFFFFFFF)>>>0;
+  }
+  async function zlib(bytes){
+    const cs=new CompressionStream('deflate');
+    const w=cs.writable.getWriter(); w.write(bytes); w.close();
+    return new Uint8Array(await new Response(cs.readable).arrayBuffer());
+  }
+  const u32=n=>new Uint8Array([(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255]);
+  const u16=n=>new Uint8Array([(n>>>8)&255,n&255]);
+  function concat(a){let L=0;for(const x of a)L+=x.length;const o=new Uint8Array(L);let p=0;for(const x of a){o.set(x,p);p+=x.length;}return o;}
+  function chunk(type,data){
+    const t=new TextEncoder().encode(type);
+    const body=concat([t,data]);
+    return concat([u32(data.length),body,u32(crc32(body))]);
+  }
+  // frames: Uint8Array RGBA (w*h*4). delays: ms
+  async function encode(frames,w,h,delays){
+    const sig=new Uint8Array([137,80,78,71,13,10,26,10]);
+    const ihdr=chunk('IHDR',concat([u32(w),u32(h),new Uint8Array([8,6,0,0,0])]));
+    const actl=chunk('acTL',concat([u32(frames.length),u32(0)]));
+    const parts=[sig,ihdr,actl]; let seq=0;
+    const rowLen=w*4+1;
+    for(let f=0;f<frames.length;f++){
+      const raw=new Uint8Array(h*rowLen);
+      for(let y=0;y<h;y++){ raw[y*rowLen]=0; raw.set(frames[f].subarray(y*w*4,(y+1)*w*4), y*rowLen+1); }
+      const comp=await zlib(raw);
+      const num=Math.max(1,Math.round(delays[f]));
+      const fctl=chunk('fcTL',concat([u32(seq++),u32(w),u32(h),u32(0),u32(0),u16(num),u16(1000),new Uint8Array([0,0])]));
+      parts.push(fctl);
+      parts.push(f===0 ? chunk('IDAT',comp) : chunk('fdAT',concat([u32(seq++),comp])));
+    }
+    parts.push(chunk('IEND',new Uint8Array(0)));
+    return concat(parts);
+  }
+  return {encode, crc32};
+})();
+
+/* ---------- store-only ZIP (파일이 이미 압축된 PNG라 무압축) ---------- */
+function makeZip(files){ // files: [{name, bytes}]
+  const enc=new TextEncoder();
+  const u16=n=>[n&255,(n>>8)&255];
+  const u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>>24)&255];
+  let local=[], central=[], offset=0;
+  for(const f of files){
+    const name=enc.encode(f.name), crc=APNG.crc32(f.bytes), sz=f.bytes.length;
+    const lh=[].concat([0x50,0x4b,0x03,0x04],u16(20),u16(0),u16(0),u16(0),u16(0),
+      u32(crc),u32(sz),u32(sz),u16(name.length),u16(0));
+    const lhb=new Uint8Array(lh.length+name.length+sz);
+    lhb.set(lh,0); lhb.set(name,lh.length); lhb.set(f.bytes,lh.length+name.length);
+    local.push(lhb);
+    const ch=[].concat([0x50,0x4b,0x01,0x02],u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),
+      u32(crc),u32(sz),u32(sz),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset));
+    const chb=new Uint8Array(ch.length+name.length);
+    chb.set(ch,0); chb.set(name,ch.length);
+    central.push(chb);
+    offset+=lhb.length;
+  }
+  let cs=0; for(const c of central) cs+=c.length;
+  const eocd=new Uint8Array([].concat([0x50,0x4b,0x05,0x06],u16(0),u16(0),
+    u16(files.length),u16(files.length),u32(cs),u32(offset),u16(0)));
+  let total=offset+cs+eocd.length, out=new Uint8Array(total), p=0;
+  for(const l of local){out.set(l,p);p+=l.length;}
+  for(const c of central){out.set(c,p);p+=c.length;}
+  out.set(eocd,p);
+  return out;
+}
+
+/* ---------- moods & themes ---------- */
+const MOODS = {
+  fog:    {name:"안개 속으로", desc:"부드럽게 번지는 페이드 + 흐르는 안개", anim:"fade", particle:"fog", grain:0.03, glow:8, vignette:.55, blurIn:true},
+  breath: {name:"숨결", desc:"천천히 밝아지는 은은한 발광", anim:"fade", glow:22, vignette:.5, pulse:true},
+  type:   {name:"타자기", desc:"한 글자씩 또박또박, 커서 깜빡임", anim:"type", grain:0.02, scan:true, glow:4, vignette:.4},
+  drift:  {name:"부유", desc:"위로 천천히 떠오르는 문장 + 먼지", anim:"rise", particle:"fog", glow:10, vignette:.5},
+  film:   {name:"오래된 필름", desc:"깜빡임과 그레인, 세피아 톤", anim:"fade", grain:0.10, flicker:true, vignette:.7, glow:6},
+  rain:   {name:"빗속에서", desc:"창밖에 내리는 빗줄기", anim:"fade", particle:"rain", grain:0.02, vignette:.55, glow:5},
+  snow:   {name:"첫눈", desc:"조용히 흩날리는 눈송이", anim:"fade", particle:"snow", glow:9, vignette:.45},
+  stars:  {name:"별이 쏟아지는 밤", desc:"깜빡이는 별빛, 짙은 밤하늘", anim:"fade", particle:"stars", glow:12, vignette:.5},
+  embers: {name:"잉걸불", desc:"위로 떠오르는 불씨, 따뜻한 톤", anim:"fade", particle:"embers", glow:16, vignette:.6},
+  glow:   {name:"노을", desc:"천천히 흐르며 번지는 빛", anim:"fade", particle:"glow", glow:14, vignette:.5},
+  halo:   {name:"여명", desc:"창가에 스며드는 은은한 빛", anim:"fade", particle:"halo", glow:10, vignette:.45},
+  dread:  {name:"귀기", desc:"스멀스멀 번지는 서늘한 기운, 흔들림과 정전", anim:"fade", particle:"dread", grain:0.09, flickerHard:true, jitter:true, vignette:.8, glow:3},
+  glitch: {name:"글리치", desc:"색번짐과 화면 튐, 불안정한 신호", anim:"fade", glitch:true, grain:0.05, flicker:true, vignette:.35, glow:6},
+  ink:    {name:"먹물", desc:"어둠이 걷히듯 번져서 드러나는 문장", anim:"fade", inkReveal:true, vignette:.5, glow:6},
+  heartbeat:{name:"박동", desc:"두 번씩 뛰는 심장박동 리듬", anim:"fade", heartbeat:true, vignette:.5, glow:16},
+  neon:   {name:"네온", desc:"전기가 튀듯 번쩍이는 네온 불빛", anim:"fade", neonFlicker:true, scan:true, vignette:.4, glow:28},
+  polaroid:{name:"폴라로이드", desc:"빛 번짐과 가느다란 스크래치가 있는 오래된 사진", anim:"fade", particle:"polaroid", grain:0.03, vignette:.5, glow:4},
+  aurora: {name:"오로라", desc:"여러 색이 겹치며 흐르는 밤하늘의 빛", anim:"fade", particle:"aurora", glow:10, vignette:.5},
+  wave:   {name:"파도 글자", desc:"글자마다 물결처럼 오르내리는 텍스트", charMotion:"wave", vignette:.5, glow:8},
+  scatter:{name:"흩어져 모이기", desc:"흩어진 글자들이 하나씩 자리를 찾아가는 텍스트", charMotion:"scatter", vignette:.5, glow:6},
+  elastic:{name:"탄성 등장", desc:"글자가 톡톡 튀어오르듯 나타나는 텍스트", charMotion:"elastic", vignette:.5, glow:10},
+  spin:   {name:"회전 등장", desc:"문장이 살짝 회전하며 나타납니다", anim:"spin", vignette:.5, glow:8},
+  zigzag: {name:"지그재그", desc:"글자가 지그재그로 튀는 리듬", charMotion:"zigzag", vignette:.5, glow:8},
+  beam:   {name:"빛 기둥", desc:"스포트라이트처럼 스치는 빛줄기", anim:"fade", particle:"beam", vignette:.5, glow:10},
+  shake:  {name:"흔들리며 등장", desc:"강하게 흔들리다 서서히 안정됩니다", anim:"fade", shakeIn:true, vignette:.5, glow:8},
+  fireflies:{name:"반딧불", desc:"어둠 속을 떠도는 작은 빛들", anim:"fade", particle:"fireflies", vignette:.6, glow:6},
+  double: {name:"이중노출", desc:"문장이 겹쳐 번지듯 갈라집니다", anim:"fade", doubleExposure:true, vignette:.5, glow:8},
+  scanline:{name:"스캔라인", desc:"위에서 아래로 훑고 지나가는 스캔선", anim:"fade", scan:true, flicker:true, particle:"scanband", vignette:.5, glow:6},
+  holo:   {name:"홀로그램", desc:"빨강·청록 색이 갈라지는 신호", anim:"fade", scan:true, chromaFringe:true, vignette:.4, glow:10},
+  retype: {name:"타이핑 반복", desc:"쓰고 지우기를 반복하는 터미널", anim:"retype", scan:true, glow:4, vignette:.4},
+};
+// theme: [bgTop, bgBottom, textColor, accent(glow)]
+const THEMES = {
+  midnight:{c:["#0a1020","#05070d","#dfe6f0","#8fb4e0"], label:"미드나잇"},
+  charcoal:{c:["#1a1c20","#0a0b0d","#ece7d9","#c9c2b0"], label:"차콜"},
+  sepia:   {c:["#241a10","#0f0a05","#efd9b4","#e0a86a"], label:"세피아"},
+  plum:    {c:["#1e0f1c","#0a0509","#f0d9e6","#d089b8"], label:"플럼"},
+  mono:    {c:["#111111","#000000","#ffffff","#dddddd"], label:"모노"},
+  forest:  {c:["#0c1712","#040806","#d5e6d8","#8ec79c"], label:"포레스트"},
+  blood:   {c:["#1a0508","#050202","#f2d9d9","#c23b3b"], label:"블러드"},
+  pastel:  {c:["#fdf1f8","#f6e4f3","#5b4a63","#e79fc4"], label:"파스텔드림"},
+  fairy:   {c:["#eaf6fb","#dcf0ec","#274a4a","#7fd9c4"], label:"페어리라이트"},
+  custom:  {c:["#141824","#05070d","#ece7d9","#c9a876"], label:"커스텀"},
+};
+const FONTS = {serif:'"Iowan Old Style",Georgia,"Apple SD Gothic Neo","Nanum Myeongjo",serif',
+  sans:'-apple-system,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif',
+  mono:'"SFMono-Regular",Menlo,Consolas,"D2Coding",monospace',
+  hand:'"Gaegu","Apple SD Gothic Neo",cursive',
+  impact:'"Black Han Sans","Apple SD Gothic Neo",sans-serif',
+  elegant:'"Gowun Batang","Nanum Myeongjo",serif'};
+
+/* ---------- state ---------- */
+const S = {mood:"fog", theme:"midnight", font:"serif", align:"center",
+  res:"640x360", fps:12, dur:3, autofit:true, cutIndex:0, cuts:[], playing:true, bgImage:null,
+  textScale:1, transparent:false};
+
+/* ---------- helpers ---------- */
+const $=id=>document.getElementById(id);
+function hexRgb(h){h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
+function beatCurve(t){
+  // two quick pulses ("lub-dub") then rest, within one cycle t in [0,1)
+  const b1=Math.exp(-Math.pow((t-0.08)/0.045,2));
+  const b2=Math.exp(-Math.pow((t-0.22)/0.06,2));
+  return Math.min(1, b1*0.9+b2);
+}
+function hash01(n){ const x=Math.sin(n*12.9898+78.233)*43758.5453; return x-Math.floor(x); }
+function elasticScale(t){
+  if(t<=0) return 0; if(t>=1) return 1;
+  const c4=(2*Math.PI)/3;
+  return Math.pow(2,-10*t)*Math.sin((t*10-0.75)*c4)+1;
+}
+
+function parseCuts(text){
+  const lines = text.replace(/\r/g,'').split('\n');
+  const isSep = l => /^[\s.·…‥⋯]+$/.test(l) && (l.match(/[.·…‥⋯]/g)||[]).length>=2 || l.trim()==='';
+  const cuts=[]; let cur=[];
+  const push=()=>{ const joined=cur.join('\n').trim(); if(joined) cuts.push(joined); cur=[]; };
+  for(const l of lines){
+    if(isSep(l)) push(); else cur.push(l);
+  }
+  push();
+  return cuts;
+}
+
+/* ---------- text layout ---------- */
+function layout(ctx, text, W, H, fontFam, scale){
+  const maxW = W*0.84;
+  const paras = text.split('\n');
+  const maxSize = Math.round(H*0.42);
+  let size = Math.min(maxSize, Math.max(6, Math.round(H*0.11*(scale||1))));
+  let minS = Math.max(12, Math.round(H*0.045));
+  if(size < minS) minS = size; // honor an explicitly small manual size instead of skipping the fit loop
+  let lines;
+  while(size>=minS){
+    ctx.font = `500 ${size}px ${fontFam}`;
+    lines=[];
+    for(const p of paras){
+      if(p===''){ lines.push(''); continue; }
+      const words=p.split(' '); let line='';
+      for(const w of words){
+        // 한국어는 공백이 적으니 글자 단위로도 줄바꿈
+        const test=line?line+' '+w:w;
+        if(ctx.measureText(test).width>maxW && line){ lines.push(line); line=w; }
+        else line=test;
+        // 단어 자체가 넘치면 글자 단위 분할
+        while(ctx.measureText(line).width>maxW && line.length>1){
+          let cut=line.length-1;
+          while(cut>1 && ctx.measureText(line.slice(0,cut)).width>maxW) cut--;
+          lines.push(line.slice(0,cut)); line=line.slice(cut);
+        }
+      }
+      lines.push(line);
+    }
+    const lh=size*1.42;
+    if(lines.length*lh <= H*0.82) break;
+    size-=2;
+  }
+  return {lines, size, lh:size*1.42};
+}
+
+/* ---------- particle / graphic-motif layer ---------- */
+function drawParticles(ctx, W, H, p, kind, accent){
+  const n = Math.max(6, Math.round(W*H/15000));
+  ctx.save();
+  if(kind==='fog'){
+    for(let i=0;i<n;i++){
+      const seedX=(i*97%100)/100, seedY=(i*57%100)/100, spd=0.15+((i*31%100)/100)*0.5;
+      const r=(W*0.02)*(0.4+((i*13%100)/100));
+      let y=(seedY - p*spd)%1; if(y<0)y+=1;
+      const x=(seedX + Math.sin((p+seedX)*6.28)*0.02)%1;
+      const edge=Math.min(y,1-y)*2;
+      ctx.globalAlpha=0.05*Math.min(1,edge*1.4);
+      ctx.fillStyle=accent;
+      ctx.beginPath(); ctx.arc(x*W,y*H,r,0,6.283); ctx.fill();
+    }
+  } else if(kind==='rain'){
+    ctx.strokeStyle=accent; ctx.lineWidth=Math.max(1,W*0.0018);
+    for(let i=0;i<n*1.4;i++){
+      const seedX=(i*131%1000)/1000, seedY=(i*211%1000)/1000;
+      const spd=1.5+((i*31%100)/100)*0.9;
+      let y=(seedY + p*spd)%1;
+      const x=(seedX + y*0.03)%1;
+      const len=H*0.045;
+      ctx.globalAlpha=0.22+((i%5)*0.03);
+      ctx.beginPath(); ctx.moveTo(x*W,y*H); ctx.lineTo(x*W+len*0.18,y*H+len); ctx.stroke();
+    }
+  } else if(kind==='snow'){
+    for(let i=0;i<n;i++){
+      const seedX=(i*97%1000)/1000, seedY=(i*181%1000)/1000;
+      const spd=0.08+((i*13%100)/100)*0.22;
+      let y=(seedY + p*spd)%1;
+      const x=(seedX + Math.sin(p*6.283*1.4+seedY*6.28)*0.025)%1;
+      const r=(1+((i*7%100)/100)*2.6)*(W/480);
+      ctx.globalAlpha=0.5;
+      ctx.fillStyle=accent;
+      ctx.beginPath(); ctx.arc(((x%1+1)%1)*W, y*H, r, 0, 6.283); ctx.fill();
+    }
+  } else if(kind==='stars'){
+    for(let i=0;i<n*0.8;i++){
+      const seedX=(i*97%1000)/1000, seedY=(i*233%1000)/1000;
+      const tw=0.5+0.5*Math.sin(p*6.283*(1+(i%5)*0.35)+i);
+      const r=(0.6+((i*11%100)/100)*1.3)*(W/480);
+      ctx.globalAlpha=0.2+0.55*tw;
+      ctx.fillStyle="#ffffff";
+      ctx.beginPath(); ctx.arc(seedX*W, seedY*H*0.82, r, 0, 6.283); ctx.fill();
+    }
+  } else if(kind==='embers'){
+    for(let i=0;i<n;i++){
+      const seedX=(i*97%1000)/1000, seedY=(i*151%1000)/1000;
+      const spd=0.28+((i*23%100)/100)*0.4;
+      let y=1-(((seedY + p*spd)%1+1)%1);
+      const x=((seedX + Math.sin(p*6.283+i)*0.025)%1+1)%1;
+      const r=(0.6+((i*17%100)/100)*1.6)*(W/480);
+      ctx.globalAlpha=Math.max(0,0.15+y*0.5)*(0.7+0.3*Math.sin(p*20+i));
+      ctx.fillStyle=accent; ctx.shadowColor=accent; ctx.shadowBlur=6;
+      ctx.beginPath(); ctx.arc(x*W,y*H,r,0,6.283); ctx.fill();
+      ctx.shadowBlur=0;
+    }
+  } else if(kind==='glow'){
+    // one soft warm light slowly drifting across the frame — no hard edges, no shapes
+    const [ar,ag,ab]=hexRgb(accent);
+    const cx = W*(0.5+0.32*Math.sin(p*6.283*0.5));
+    const cy = H*(0.42+0.14*Math.cos(p*6.283*0.5));
+    const r = Math.max(W,H)*0.6;
+    const rg = ctx.createRadialGradient(cx,cy,0, cx,cy,r);
+    rg.addColorStop(0, `rgba(${ar},${ag},${ab},0.20)`);
+    rg.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
+    ctx.fillStyle=rg;
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,6.283); ctx.fill();
+  } else if(kind==='halo'){
+    // fixed soft corner glow that breathes slowly, like window light
+    const [ar,ag,ab]=hexRgb(accent);
+    const cx=W*0.78, cy=H*0.22;
+    const pulse=0.5+0.5*Math.sin(p*6.283*0.6);
+    const r=Math.max(W,H)*(0.38+0.12*pulse);
+    const rg=ctx.createRadialGradient(cx,cy,0, cx,cy,r);
+    rg.addColorStop(0, `rgba(${ar},${ag},${ab},${0.22+0.08*pulse})`);
+    rg.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
+    ctx.fillStyle=rg;
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,6.283); ctx.fill();
+  } else if(kind==='dread'){
+    // creeping dark presence — shadow blobs that darken rather than glow, moving unevenly
+    for(let i=0;i<2;i++){
+      const f1=0.13+i*0.05, f2=0.09+i*0.04;
+      const cx=W*(0.5+0.38*Math.sin(p*6.283*f1*3+i*2.1));
+      const cy=H*(0.5+0.30*Math.sin(p*6.283*f2*3+i*1.3+1));
+      const r=Math.max(W,H)*(0.42+0.08*Math.sin(p*6.283*0.5+i));
+      const rg=ctx.createRadialGradient(cx,cy,0, cx,cy,r);
+      rg.addColorStop(0,'rgba(0,0,0,0.55)');
+      rg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=rg;
+      ctx.beginPath(); ctx.arc(cx,cy,r,0,6.283); ctx.fill();
+    }
+    // a faint cold glint at the edge, like something briefly catching light
+    const [ar,ag,ab]=hexRgb(accent);
+    const gx=W*(0.15+0.05*Math.sin(p*6.283*0.37)), gy=H*(0.85+0.05*Math.cos(p*6.283*0.29));
+    const gr=Math.max(W,H)*0.12;
+    const rg2=ctx.createRadialGradient(gx,gy,0, gx,gy,gr);
+    rg2.addColorStop(0,`rgba(${ar},${ag},${ab},0.16)`);
+    rg2.addColorStop(1,`rgba(${ar},${ag},${ab},0)`);
+    ctx.fillStyle=rg2;
+    ctx.beginPath(); ctx.arc(gx,gy,gr,0,6.283); ctx.fill();
+  } else if(kind==='polaroid'){
+    // warm static light-leak in one corner + a few faint, mostly-still scratches
+    const cx=W*0.12, cy=H*0.92;
+    const pulse=0.5+0.5*Math.sin(p*6.283*0.4);
+    const r=Math.max(W,H)*(0.45+0.05*pulse);
+    const rg=ctx.createRadialGradient(cx,cy,0, cx,cy,r);
+    rg.addColorStop(0,`rgba(255,244,214,${0.16+0.05*pulse})`);
+    rg.addColorStop(1,'rgba(255,244,214,0)');
+    ctx.fillStyle=rg; ctx.beginPath(); ctx.arc(cx,cy,r,0,6.283); ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.8)'; ctx.lineWidth=1;
+    for(let i=0;i<4;i++){
+      const sx=(i*211%1000)/1000*W, sy=(i*97%1000)/1000*H*0.6;
+      const len=H*(0.25+((i*53%100)/100)*0.3);
+      const ang=0.35+((i%2)*0.3);
+      ctx.globalAlpha=(0.05+((i%3)*0.02))*(0.6+0.4*Math.sin(p*6.283*0.3+i));
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(sx+Math.cos(ang)*len, sy+Math.sin(ang)*len); ctx.stroke();
+    }
+  } else if(kind==='aurora'){
+    // soft multi-hue vertical light curtains, derived from the theme accent via channel rotation
+    const [r0,g0,b0]=hexRgb(accent);
+    const cols=[[r0,g0,b0],[g0,b0,r0],[b0,r0,g0]];
+    for(let i=0;i<3;i++){
+      const [cr,cg,cb]=cols[i];
+      const cx=W*(0.22+i*0.28+0.06*Math.sin(p*6.283*(0.22+i*0.07)+i*1.7));
+      const cy=H*0.28;
+      const rx=W*0.22, ry=H*0.55;
+      const a=0.14+0.05*Math.sin(p*6.283*(0.3+i*0.09)+i*2.3);
+      ctx.save();
+      ctx.translate(cx,cy); ctx.scale(1, ry/rx);
+      const rg2=ctx.createRadialGradient(0,0,0, 0,0,rx);
+      rg2.addColorStop(0, `rgba(${cr},${cg},${cb},${a})`);
+      rg2.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+      ctx.fillStyle=rg2;
+      ctx.beginPath(); ctx.arc(0,0,rx,0,6.283); ctx.fill();
+      ctx.restore();
+    }
+  } else if(kind==='beam'){
+    // a single soft vertical light column sweeping left-right, pure gradient (no hard edges)
+    const [ar,ag,ab]=hexRgb(accent);
+    const cx=W*(0.5+0.5*Math.sin(p*6.283*0.5));
+    const beamW=W*0.16;
+    const grad=ctx.createLinearGradient(cx-beamW,0, cx+beamW,0);
+    grad.addColorStop(0, `rgba(${ar},${ag},${ab},0)`);
+    grad.addColorStop(0.5, `rgba(${ar},${ag},${ab},0.22)`);
+    grad.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
+    ctx.fillStyle=grad;
+    ctx.fillRect(0,0,W,H);
+  } else if(kind==='fireflies'){
+    // small glowing points wandering erratically, blinking independently
+    const n=7;
+    for(let i=0;i<n;i++){
+      const seedX=(i*173%1000)/1000, seedY=(i*281%1000)/1000;
+      const wanderX=Math.sin(p*6.283*(0.4+i*0.05)+i*3.1)*0.06 + Math.sin(p*6.283*(0.9+i*0.03)+i)*0.03;
+      const wanderY=Math.cos(p*6.283*(0.35+i*0.04)+i*2.2)*0.06 + Math.cos(p*6.283*(0.8+i*0.02)+i)*0.03;
+      const x=((seedX+wanderX)%1+1)%1, y=((seedY+wanderY)%1+1)%1;
+      const blink=0.4+0.6*Math.max(0, Math.sin(p*6.283*(1.3+i*0.17)+i*4));
+      const r=(1.6+((i*37%100)/100)*1.4)*(W/480);
+      ctx.globalAlpha=0.5*blink;
+      ctx.fillStyle=accent; ctx.shadowColor=accent; ctx.shadowBlur=8;
+      ctx.beginPath(); ctx.arc(x*W,y*H,r,0,6.283); ctx.fill();
+      ctx.shadowBlur=0;
+    }
+  } else if(kind==='scanband'){
+    // a soft bright band sweeping top-to-bottom repeatedly, like a CRT refresh scan
+    const [ar,ag,ab]=hexRgb(accent);
+    const y=H*((p*0.8)%1);
+    const bandH=H*0.12;
+    const grad=ctx.createLinearGradient(0,y-bandH,0,y+bandH);
+    grad.addColorStop(0, `rgba(${ar},${ag},${ab},0)`);
+    grad.addColorStop(0.5, `rgba(${ar},${ag},${ab},0.18)`);
+    grad.addColorStop(1, `rgba(${ar},${ag},${ab},0)`);
+    ctx.fillStyle=grad;
+    ctx.fillRect(0, y-bandH, W, bandH*2);
+  }
+  ctx.restore();
+  ctx.globalAlpha=1;
+}
+
+/* ---------- glitch post-effect (chromatic split + slice jitter) ---------- */
+function drawGlitch(ctx, W, H, p){
+  const canvas=ctx.canvas;
+  for(let b=0;b<3;b++){
+    const active=Math.sin(p*40+b*7)>0.82;
+    if(!active) continue;
+    const y=Math.floor((0.15+b*0.3)*H);
+    const h=Math.max(2,Math.floor(H*0.05));
+    if(y+h>H) continue;
+    const shift=Math.round((Math.sin(p*60+b)>0?1:-1)*Math.max(2,W*0.012));
+    try{ ctx.drawImage(canvas, 0,y,W,h, shift,y,W,h); }catch(e){/* ignore edge cases */}
+  }
+}
+
+/* ---------- per-character text motion (wave / scatter / elastic) ---------- */
+function drawCharMotion(ctx, lines, lh, baseY, x0, left, size, p, kind, jx, jy){
+  const baseAlpha=ctx.globalAlpha;
+  let gci=0;
+  for(let i=0;i<lines.length;i++){
+    const ln=lines[i];
+    if(!ln){ continue; }
+    ctx.textAlign='left';
+    const totalW=ctx.measureText(ln).width;
+    let cx = left ? x0 : x0-totalW/2;
+    const baseYPos = baseY+i*lh;
+    for(let ci=0; ci<ln.length; ci++){
+      const ch=ln[ci];
+      const w=ctx.measureText(ch).width;
+      if(kind==='wave'){
+        const amp=size*0.16;
+        const yOff=amp*Math.sin(p*6.283*1.1 - gci*0.35);
+        ctx.save();
+        ctx.translate(cx+w/2+jx, baseYPos+yOff+jy);
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(ch,0,0);
+        ctx.restore();
+      } else if(kind==='scatter'){
+        const delay=Math.min(0.5, gci*0.018), dur=0.4;
+        const lp=Math.max(0,Math.min(1,(p-delay)/dur));
+        const eased=1-Math.pow(1-lp,3);
+        const dx0=(hash01(gci*1.7+1)-0.5)*size*3;
+        const dy0=(hash01(gci*2.3+7)-0.5)*size*3;
+        const rot0=(hash01(gci*3.1+13)-0.5)*2.4;
+        ctx.save();
+        ctx.globalAlpha=baseAlpha*Math.max(0,Math.min(1,eased));
+        ctx.translate(cx+w/2+dx0*(1-eased)+jx, baseYPos+dy0*(1-eased)+jy);
+        ctx.rotate(rot0*(1-eased));
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(ch,0,0);
+        ctx.restore();
+      } else if(kind==='zigzag'){
+        const tri=(t)=>{ const tt=t-Math.floor(t); return tt<0.5 ? (tt*4-1) : (3-tt*4); };
+        const amp=size*0.15;
+        const xOff=amp*0.5*tri(p*1.3 - gci*0.12);
+        const yOff=amp*tri(p*1.3 - gci*0.12 + 0.25);
+        ctx.save();
+        ctx.translate(cx+w/2+xOff+jx, baseYPos+yOff+jy);
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(ch,0,0);
+        ctx.restore();
+      } else if(kind==='elastic'){
+        const delay=Math.min(0.5, gci*0.02), dur=0.35;
+        const lp=Math.max(0,Math.min(1,(p-delay)/dur));
+        const sc=elasticScale(lp);
+        ctx.save();
+        ctx.globalAlpha=baseAlpha*Math.max(0,Math.min(1,lp*4));
+        ctx.translate(cx+w/2+jx, baseYPos+jy);
+        ctx.scale(Math.max(0.001,sc), Math.max(0.001,sc));
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(ch,0,0);
+        ctx.restore();
+      }
+      cx+=w;
+      gci++;
+    }
+  }
+}
+
+/* ---------- frame renderer ---------- */
+function drawFrame(ctx, W, H, p, opts, text){
+  const M=MOODS[opts.mood], TH=THEMES[opts.theme].c, fam=FONTS[opts.font];
+  ctx.clearRect(0,0,W,H);
+
+  // background: transparent, user photo (cover-fit), or theme gradient
+  if(opts.transparent){
+    // leave canvas cleared (alpha 0) — nothing drawn here
+  } else if(opts.bgImage && opts.bgImage.complete && opts.bgImage.naturalWidth){
+    const img=opts.bgImage, ir=img.naturalWidth/img.naturalHeight, tr=W/H;
+    let sw,sh,sx,sy;
+    if(ir>tr){ sh=img.naturalHeight; sw=sh*tr; sx=(img.naturalWidth-sw)/2; sy=0; }
+    else { sw=img.naturalWidth; sh=sw/tr; sx=0; sy=(img.naturalHeight-sh)/2; }
+    ctx.drawImage(img, sx,sy,sw,sh, 0,0,W,H);
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'rgba(0,0,0,0.32)'); g.addColorStop(0.55,'rgba(0,0,0,0.22)'); g.addColorStop(1,'rgba(0,0,0,0.55)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  } else {
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,TH[0]); g.addColorStop(1,TH[1]);
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  }
+
+  // particle / graphic motif layer
+  if(M.particle) drawParticles(ctx,W,H,p,M.particle,TH[3]);
+
+  // text animation
+  const {lines,size,lh}=layout(ctx,text,W,H,fam,opts.textScale);
+  ctx.font=`500 ${size}px ${fam}`;
+  ctx.textBaseline='middle';
+  const left = opts.align==='left';
+  ctx.textAlign = left?'left':'center';
+  const totalH=lines.length*lh;
+  let baseY=(H-totalH)/2 + lh/2;
+  let x0 = left ? W*0.10 : W/2;
+
+  let alpha=1, dy=0, blur=0, revealChars=1e9, jx=0, jy=0, spinAngle=0;
+  if(M.anim==='fade'){ alpha=Math.min(1, p/0.55); if(M.blurIn) blur=Math.max(0,(0.5-p)/0.5)*size*0.4; }
+  if(M.anim==='rise'){ const e=Math.min(1,p/0.6); alpha=e; dy=(1-e)*H*0.12; }
+  if(M.anim==='type'){ const chars=lines.join('\n').length; revealChars=Math.floor(Math.min(1,p/0.72)*chars); }
+  if(M.anim==='retype'){
+    const chars=lines.join('\n').length;
+    const cyc=(p*1.4)%1;
+    let rc;
+    if(cyc<0.45) rc=(cyc/0.45)*chars;
+    else if(cyc<0.55) rc=chars;
+    else if(cyc<0.85) rc=(1-(cyc-0.55)/0.30)*chars;
+    else rc=0;
+    revealChars=Math.max(0,Math.min(chars,Math.floor(rc)));
+  }
+  if(M.anim==='spin'){ const e=Math.min(1,p/0.5); alpha=e; spinAngle=(1-e)*-0.22; }
+  if(M.pulse){ alpha*= (0.82+0.18*Math.sin(p*6.283)); }
+  if(M.flicker){ const fl=(Math.sin(p*40)*0.5+0.5); alpha*= (0.78+0.22*fl); if(((p*13)%1)<0.03) alpha*=0.5; }
+  if(M.flickerHard){ const nz=Math.sin(p*97.3)+Math.sin(p*53.7+1.3); if(nz>1.5) alpha*=0.08; else if(nz>1.15) alpha*=0.45; }
+  if(M.jitter){ jx=(Math.sin(p*233.1)+Math.sin(p*97.7+2.1))*size*0.006; jy=(Math.sin(p*181.3+0.7)+Math.cos(p*151.9))*size*0.005; }
+  if(M.shakeIn){ const decay=Math.max(0,1-p/0.4); const amp=size*0.12*decay; jx+=Math.sin(p*97.1)*amp; jy+=Math.sin(p*130.3+1.7)*amp*0.7; }
+  if(M.heartbeat){ const bt=beatCurve((p*2)%1); alpha*= (0.72+0.32*bt); }
+  if(M.neonFlicker){ const buzz=Math.sin(p*140)+Math.sin(p*89+1.7); alpha*= (buzz>-0.3 ? 1 : 0.15); }
+
+  ctx.save();
+  if(spinAngle){ ctx.translate(W/2,H/2); ctx.rotate(spinAngle); ctx.translate(-W/2,-H/2); }
+  ctx.globalAlpha=Math.max(0,Math.min(1,alpha));
+  ctx.filter = blur>0.4 ? `blur(${blur}px)` : 'none';
+  ctx.shadowColor=TH[3];
+  // keep the glow's visual footprint independent of the manual text-size slider —
+  // smaller glyphs bloom less on their own, so we boost blur radius to compensate
+  const glowComp = 1/Math.max(0.55, Math.min(1.6, opts.textScale||1));
+  const glowMod = M.pulse ? (0.6+0.6*Math.sin(p*6.283)) : (M.heartbeat ? (0.55+0.8*beatCurve((p*2)%1)) : 1);
+  ctx.shadowBlur = M.glow*glowComp*glowMod;
+  ctx.fillStyle=TH[2];
+
+  let charCount=0, cursorPos=null;
+  if(M.charMotion){
+    drawCharMotion(ctx, lines, lh, baseY, x0, left, size, p, M.charMotion, jx, jy);
+  } else {
+    if(M.doubleExposure){
+      const drift=size*0.35*Math.min(1,p/0.6);
+      const prevAlpha=ctx.globalAlpha;
+      ctx.globalAlpha=prevAlpha*0.35;
+      for(let i=0;i<lines.length;i++){ ctx.fillText(lines[i], x0+jx+drift, baseY+i*lh+dy+jy-drift*0.4); }
+      ctx.globalAlpha=prevAlpha;
+    }
+    if(M.chromaFringe){
+      const prevFill=ctx.fillStyle, prevAlpha=ctx.globalAlpha;
+      ctx.globalAlpha=prevAlpha*0.35;
+      ctx.fillStyle='rgba(255,80,190,1)';
+      for(let i=0;i<lines.length;i++){ ctx.fillText(lines[i], x0+jx-2, baseY+i*lh+dy+jy); }
+      ctx.fillStyle='rgba(80,210,255,1)';
+      for(let i=0;i<lines.length;i++){ ctx.fillText(lines[i], x0+jx+2, baseY+i*lh+dy+jy); }
+      ctx.fillStyle=prevFill; ctx.globalAlpha=prevAlpha;
+    }
+    for(let i=0;i<lines.length;i++){
+      let ln=lines[i];
+      if(M.anim==='type' || M.anim==='retype'){
+        const remain=revealChars-charCount;
+        if(remain<=0){ charCount+=ln.length+1; continue; }
+        if(remain<ln.length){ cursorPos={line:i, sub:remain}; ln=ln.slice(0,remain); }
+        charCount+=lines[i].length+1;
+      }
+      ctx.fillText(ln, x0+jx, baseY+i*lh+dy+jy);
+    }
+  }
+  ctx.restore();
+
+  // typewriter cursor (blinks a few times per loop)
+  if((M.anim==='type'||M.anim==='retype') && cursorPos && ((Math.floor(p*(opts.fps||12)))%2===0)){
+    const li=cursorPos.line;
+    const shown=lines[li].slice(0,cursorPos.sub);
+    ctx.font=`500 ${size}px ${fam}`; ctx.textAlign=left?'left':'center';
+    const w=ctx.measureText(shown).width;
+    const cx = left ? x0 + w + size*0.08 : x0 + w/2 + size*0.06;
+    ctx.globalAlpha=Math.min(1,alpha); ctx.fillStyle=TH[2];
+    ctx.fillRect(cx, baseY+li*lh+dy - size*0.42, Math.max(2,size*0.06), size*0.84);
+    ctx.globalAlpha=1;
+  }
+
+  // glitch slice/chroma jitter
+  if(M.glitch) drawGlitch(ctx,W,H,p);
+
+  // scanlines (skipped in transparent mode — a full-frame black wash would fog the alpha)
+  if(M.scan && !opts.transparent){
+    ctx.globalAlpha=0.05; ctx.fillStyle="#000";
+    for(let y=0;y<H;y+=3) ctx.fillRect(0,y,W,1);
+    ctx.globalAlpha=1;
+  }
+  // grain
+  if(M.grain && !opts.transparent){
+    const amt=M.grain, id=ctx.getImageData(0,0,W,H), d=id.data;
+    const step = amt>0.06?1:2; // 강한 그레인은 촘촘히
+    for(let i=0;i<d.length;i+=4*step){
+      const nz=(Math.random()-0.5)*255*amt;
+      d[i]+=nz; d[i+1]+=nz; d[i+2]+=nz;
+    }
+    ctx.putImageData(id,0,0);
+  }
+  // vignette
+  if(M.vignette && !opts.transparent){
+    const rg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.2, W/2,H/2,Math.max(W,H)*0.72);
+    rg.addColorStop(0,'rgba(0,0,0,0)'); rg.addColorStop(1,`rgba(0,0,0,${M.vignette})`);
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  }
+  // ink-reveal: a soft dark ring recedes outward from center, "washing away" to reveal the scene
+  if(M.inkReveal && !opts.transparent){
+    const revealP=Math.min(1, p/0.55);
+    const eased=1-Math.pow(1-revealP,3);
+    const maxR=Math.max(W,H)*(0.05+0.9*eased);
+    const rg2=ctx.createRadialGradient(W/2,H/2,maxR*0.55, W/2,H/2,maxR);
+    rg2.addColorStop(0,'rgba(0,0,0,0)'); rg2.addColorStop(1,'rgba(0,0,0,0.92)');
+    ctx.fillStyle=rg2; ctx.fillRect(0,0,W,H);
+  }
+}
+function fpsFor(o){return o.fps||12;}
+
+/* ---------- preview loop ---------- */
+const pv=$('preview'), pvx=pv.getContext('2d');
+let previewStart=performance.now();
+function resDims(res){const [w,h]=res.split('x').map(Number);return {w,h};}
+function currentCutText(){ return S.cuts.length? S.cuts[Math.min(S.cutIndex,S.cuts.length-1)] : ''; }
+
+function tick(now){
+  const {w,h}=resDims(S.res);
+  if(pv.width!==w||pv.height!==h){pv.width=w;pv.height=h;}
+  const txt=currentCutText();
+  if(txt){
+    $('idle').style.display='none'; pv.style.display='block';
+    let p;
+    const period=S.dur*1000;
+    if(S.playing){ p=((now-previewStart)%period)/period; }
+    else { p=parseFloat($('scrub').value)/1000; }
+    if(S.playing) $('scrub').value=Math.round(p*1000);
+    drawFrame(pvx,w,h,p,S,txt);
+  } else {
+    $('idle').style.display='flex'; pv.style.display='none';
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+/* ---------- generation ---------- */
+const wk=$('work'), wkx=wk.getContext('2d',{willReadFrequently:true});
+const LIMIT=5*1024*1024;
+let outputs=[]; // {name, bytes, url, size}
+
+async function renderCutToAPNG(text, W, H, fps, dur){
+  wk.width=W; wk.height=H;
+  const frameCount=Math.max(2, Math.round(fps*dur));
+  const frames=[], delays=[];
+  const delayMs=Math.round(1000/fps);
+  for(let f=0; f<frameCount; f++){
+    const p=f/frameCount;
+    drawFrame(wkx,W,H,p,S,text);
+    const id=wkx.getImageData(0,0,W,H);
+    frames.push(new Uint8Array(id.data.buffer.slice(0)));
+    delays.push(delayMs);
+    if(f%4===0) await new Promise(r=>setTimeout(r)); // yield UI
+  }
+  return {bytes: await APNG.encode(frames,W,H,delays), W, H, fps, frames:frameCount};
+}
+
+function fmtSize(b){ return b>=1048576 ? (b/1048576).toFixed(2)+' MB' : (b/1024).toFixed(0)+' KB'; }
+
+async function generate(){
+  const btn=$('render'); btn.disabled=true;
+  S.cuts=parseCuts($('text').value);
+  outputs.forEach(o=>o.url&&URL.revokeObjectURL(o.url));
+  outputs=[];
+  if(!S.cuts.length){ $('status').textContent='문장이 비어 있습니다.'; btn.disabled=false; return; }
+  $('prog').classList.add('on'); const bar=$('progBar');
+  const {w:W0,h:H0}=resDims(S.res);
+  const baseFps=S.fps, baseDur=S.dur;
+
+  for(let i=0;i<S.cuts.length;i++){
+    $('status').textContent=`컷 ${i+1}/${S.cuts.length} 렌더링 중…`;
+    let W=W0,H=H0,fps=baseFps, r;
+    r=await renderCutToAPNG(S.cuts[i],W,H,fps,baseDur);
+
+    // auto-fit under 5MB
+    let tries=0;
+    while(S.autofit && r.bytes.length>LIMIT && tries<8){
+      tries++;
+      if(fps>8 && tries%2===1){ fps=Math.max(8,Math.round(fps*0.8)); }
+      else { const s=Math.sqrt(LIMIT/r.bytes.length)*0.92; W=Math.max(240,Math.round(W*s/2)*2); H=Math.max(135,Math.round(H*s/2)*2); }
+      $('status').textContent=`컷 ${i+1}: 5MB 초과 → ${W}×${H}·${fps}fps로 재조정(${tries})…`;
+      r=await renderCutToAPNG(S.cuts[i],W,H,fps,baseDur);
+    }
+
+    // thumbnail
+    wk.width=W; wk.height=H; drawFrame(wkx,W,H,0.6,S,S.cuts[i]);
+    const thumb=wk.toDataURL('image/png');
+
+    const blob=new Blob([r.bytes],{type:'image/apng'});
+    const url=URL.createObjectURL(blob);
+    outputs.push({name:`cut_${String(i+1).padStart(2,'0')}.png`, bytes:r.bytes, url, size:r.bytes.length,
+      title:S.cuts[i].replace(/\n/g,' ').slice(0,42), thumb, W, H, fps, frames:r.frames});
+    bar.style.width=Math.round((i+1)/S.cuts.length*100)+'%';
+  }
+  $('status').textContent=`완료 — 컷 ${outputs.length}개.`;
+  $('prog').classList.remove('on'); bar.style.width='0%';
+  btn.disabled=false;
+  renderOutputs();
+}
+
+function renderOutputs(){
+  const list=$('outlist');
+  if(!outputs.length){ list.innerHTML='<div class="empty">아직 없습니다.</div>'; $('dlall').style.display='none'; return; }
+  list.innerHTML='';
+  for(const o of outputs){
+    const over=o.size>LIMIT;
+    const card=document.createElement('div'); card.className='cutcard';
+    card.innerHTML=`
+      <img class="thumb" src="${o.thumb}" alt="">
+      <div class="meta">
+        <div class="t">${escapeHtml(o.title||o.name)}</div>
+        <div class="d">
+          <span class="size ${over?'bad':'ok'}">${fmtSize(o.size)}${over?' · 한도 초과':''}</span>
+          <span>${o.W}×${o.H}</span><span>${o.fps} fps · ${o.frames}프레임</span>
+        </div>
+      </div>
+      <button class="dl">저장</button>`;
+    card.querySelector('.dl').onclick=()=>downloadOne(o);
+    list.appendChild(card);
+  }
+  $('dlall').style.display= outputs.length>1 ? 'inline-block':'none';
+}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function downloadOne(o){ const a=document.createElement('a'); a.href=o.url; a.download=o.name; a.click(); }
+function downloadAll(){
+  const zip=makeZip(outputs.map(o=>({name:o.name,bytes:o.bytes})));
+  const url=URL.createObjectURL(new Blob([zip],{type:'application/zip'}));
+  const a=document.createElement('a'); a.href=url; a.download='mood_cuts.zip'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+
+/* ---------- UI wiring ---------- */
+function buildMoods(){
+  const box=$('moods'); box.innerHTML='';
+  for(const k in MOODS){ const m=MOODS[k];
+    const b=document.createElement('button'); b.className='mood'; b.setAttribute('aria-pressed', k===S.mood); b.title=m.desc;
+    b.innerHTML=`<b>${m.name}</b>`;
+    b.onclick=()=>{ S.mood=k; [...box.children].forEach(c=>c.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); resetPreview(); };
+    box.appendChild(b);
+  }
+}
+function buildThemes(){
+  const box=$('themes'); box.innerHTML='';
+  for(const k in THEMES){ const t=THEMES[k];
+    const s=document.createElement('button'); s.className='sw'; s.title=t.label; s.dataset.key=k;
+    s.style.background=`linear-gradient(135deg,${t.c[0]},${t.c[1]})`;
+    s.setAttribute('aria-pressed', k===S.theme);
+    s.innerHTML=`<span style="position:absolute;left:4px;bottom:3px;width:9px;height:9px;border-radius:50%;background:${t.c[3]}"></span>`;
+    s.onclick=()=>{
+      S.theme=k;
+      [...box.children].forEach(c=>c.setAttribute('aria-pressed','false'));
+      s.setAttribute('aria-pressed','true');
+      loadColorInputsFromTheme(k);
+      resetPreview();
+    };
+    box.appendChild(s);
+  }
+}
+function loadColorInputsFromTheme(key){
+  const c=THEMES[key].c;
+  $('cBgTop').value=c[0]; $('cBgBot').value=c[1]; $('cText').value=c[2]; $('cAccent').value=c[3];
+}
+function updateSwatchVisual(key){
+  const btn=document.querySelector(`.sw[data-key="${key}"]`); if(!btn) return;
+  const c=THEMES[key].c;
+  btn.style.background=`linear-gradient(135deg,${c[0]},${c[1]})`;
+  const dot=btn.querySelector('span'); if(dot) dot.style.background=c[3];
+}
+function syncActiveTheme(){
+  THEMES[S.theme].c=[$('cBgTop').value, $('cBgBot').value, $('cText').value, $('cAccent').value];
+  updateSwatchVisual(S.theme);
+  resetPreview();
+}
+function resetPreview(){ previewStart=performance.now(); }
+function updateCutLabel(){ $('cutLabel').textContent = S.cuts.length? `컷 ${Math.min(S.cutIndex,S.cuts.length-1)+1}/${S.cuts.length}` : '컷 –'; }
+function refreshCuts(){ S.cuts=parseCuts($('text').value); if(S.cutIndex>=S.cuts.length)S.cutIndex=0; updateCutLabel(); }
+
+$('moods'); buildMoods(); buildThemes(); loadColorInputsFromTheme(S.theme);
+$('text').addEventListener('input',()=>{refreshCuts();resetPreview();});
+$('font').onchange=e=>{S.font=e.target.value;resetPreview();};
+$('align').onchange=e=>{S.align=e.target.value;};
+$('res').onchange=e=>{S.res=e.target.value;resetPreview();};
+$('fps').onchange=e=>{S.fps=+e.target.value;};
+$('dur').oninput=e=>{S.dur=+e.target.value;$('durLabel').textContent=S.dur.toFixed(1)+'초';resetPreview();};
+$('autofit').onchange=e=>{S.autofit=e.target.checked;};
+['cBgTop','cBgBot','cText','cAccent'].forEach(id=>{ $(id).addEventListener('input', syncActiveTheme); });
+$('textScale').oninput=e=>{S.textScale=(+e.target.value)/100;$('scaleLabel').textContent=e.target.value+'%';resetPreview();};
+$('transparent').onchange=e=>{
+  S.transparent=e.target.checked;
+  $('bgRow').style.opacity=S.transparent?'0.4':'1';
+  $('bgRow').style.pointerEvents=S.transparent?'none':'auto';
+  resetPreview();
+};
+$('bgFile').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      S.bgImage=img;
+      $('bgThumb').src=reader.result; $('bgThumb').style.display='block';
+      $('bgClear').style.display='inline-block';
+      resetPreview();
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(f);
+};
+$('bgClear').onclick=()=>{
+  S.bgImage=null; $('bgFile').value='';
+  $('bgThumb').style.display='none'; $('bgClear').style.display='none';
+  resetPreview();
+};
+$('render').onclick=generate;
+$('dlall').onclick=downloadAll;
+$('playBtn').onclick=()=>{S.playing=!S.playing;$('playBtn').textContent=S.playing?'❚❚ 일시정지':'▶ 재생';if(S.playing)resetPreview();};
+$('scrub').oninput=()=>{S.playing=false;$('playBtn').textContent='▶ 재생';};
+$('prevCut').onclick=()=>{if(S.cuts.length){S.cutIndex=(S.cutIndex-1+S.cuts.length)%S.cuts.length;updateCutLabel();resetPreview();}};
+$('nextCut').onclick=()=>{if(S.cuts.length){S.cutIndex=(S.cutIndex+1)%S.cuts.length;updateCutLabel();resetPreview();}};
+
+refreshCuts();
+</script>
+</body>
+</html>
